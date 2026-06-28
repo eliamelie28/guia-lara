@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Guía Lara | Directorio local de Barquisimeto</title>
+    <meta
+      name="description"
+      content="Directorio local de servicios en Barquisimeto, Lara: panaderías, farmacias, clínicas, colegios, belleza, mascotas y más."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#inicio" aria-label="Guía Lara inicio">
+        <span class="brand-mark">GL</span>
+        <span>Guía Lara</span>
+      </a>
+      <nav class="nav" aria-label="Navegación principal">
+        <a href="#directorio">Directorio</a>
+        <a href="#registro">Registrar negocio</a>
+        <a href="#planes">Planes</a>
+      </nav>
+    </header>
+
+    <main id="inicio">
+      <section class="hero" aria-label="Buscador del directorio">
+        <img src="assets/hero-barquisimeto.png" alt="Ilustración de comercios locales en Barquisimeto" />
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <p class="eyebrow">Barquisimeto, Lara</p>
+          <h1>Encuentra servicios locales cerca de ti</h1>
+          <div class="search-panel" role="search">
+            <label for="searchInput">Buscar negocio o servicio</label>
+            <div class="search-row">
+              <input id="searchInput" type="search" placeholder="Ej: farmacia, colegio, mascotas" />
+              <button id="clearSearch" class="icon-button" type="button" aria-label="Limpiar búsqueda" title="Limpiar">
+                &times;
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="directory-section" id="directorio">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Categorías</p>
+            <h2>Directorio de servicios</h2>
+          </div>
+          <p id="resultCount" class="result-count" aria-live="polite"></p>
+        </div>
+
+        <div class="category-tabs" id="categoryTabs" aria-label="Filtrar por categoría"></div>
+        <div class="business-grid" id="businessGrid"></div>
+        <p class="empty-state" id="emptyState">No hay negocios con esa búsqueda todavía.</p>
+      </section>
+
+      <section class="register-band" id="registro">
+        <div class="form-intro">
+          <p class="eyebrow">Registro</p>
+          <h2>Agrega un negocio al directorio</h2>
+          <p>
+            Este primer prototipo guarda los registros en este navegador. Para una página publicada de verdad,
+            luego conectaremos una base de datos y revisión antes de mostrar nuevos negocios.
+          </p>
+        </div>
+
+        <form class="business-form" id="businessForm">
+          <div class="field">
+            <label for="name">Nombre del negocio *</label>
+            <input id="name" name="name" required maxlength="80" />
+          </div>
+          <div class="field">
+            <label for="category">Categoría *</label>
+            <select id="category" name="category" required"></select>
+          </div>
+          <div class="field wide">
+            <label for="address">Dirección *</label>
+            <input id="address" name="address" required maxlength="140" />
+          </div>
+          <div class="field">
+            <label for="phone">Teléfono *</label>
+            <input id="phone" name="phone" required maxlength="30" placeholder="Ej: 0412-0000000" />
+          </div>
+          <div class="field">
+            <label for="website">Sitio web o red social</label>
+            <input id="website" name="website" maxlength="120" placeholder="https://..." />
+          </div>
+          <button class="primary-button" type="submit">Registrar negocio</button>
+          <p class="form-message" id="formMessage" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="plans-section" id="planes">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Monetización</p>
+            <h2>Ideas para que el proyecto pueda crecer</h2>
+          </div>
+        </div>
+        <div class="plans-grid">
+          <article class="plan-card">
+            <h3>Gratis</h3>
+            <p>Nombre, categoría, dirección y teléfono. Sirve para atraer muchos negocios al inicio.</p>
+          </article>
+          <article class="plan-card featured">
+            <h3>Destacado</h3>
+            <p>Mejor posición, foto, redes y botón de contacto. Puede cobrarse mensual cuando haya visitas.</p>
+          </article>
+          <article class="plan-card">
+            <h3>Publicidad local</h3>
+            <p>Banners por categoría, promociones semanales o alianzas con comercios populares.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Guía Lara - Proyecto inicial de directorio local para Barquisimeto.</p>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>
