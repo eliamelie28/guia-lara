@@ -1,4 +1,102 @@
- function sameCategory(a, b) {
+const categories = [
+  "Todas",
+  "Panaderia",
+  "Belleza",
+  "Gimnasio",
+  "Colegios y escuelas",
+  "Farmacias",
+  "Clinicas",
+  "Mascotas",
+  "Supermercado",
+  "Mecanicos",
+  "Restaurantes",
+  "Tecnologia",
+];
+const starterBusinesses = [
+  {
+    name: "Panaderia El Trigal",
+    category: "Panaderia",
+    address: "Carrera 19, Barquisimeto",
+    phone: "0412-0000000",
+    website: "",
+  },
+  {
+    name: "Farmacia Centro Lara",
+    category: "Farmacias",
+    address: "Av. Vargas, Barquisimeto",
+    phone: "0251-0000000",
+    website: "",
+  },
+  {
+    name: "Clinica Salud Norte",
+    category: "Clinicas",
+    address: "Zona norte, Barquisimeto",
+    phone: "0414-0000000",
+    website: "",
+  },
+];
+
+const googleSheetCsvUrl = "https://docs.google.com/spreadsheets/d/1YJTh8yEMYVsVLzgMyOmR8NMpvYO136b2JotNy_2dlrQ/gviz/tq?tqx=out:csv";
+const storageKey = "guia-lara-businesses";
+let selectedCategory = "Todas";
+let sheetBusinesses = [];
+
+const tabs = document.querySelector("#categoryTabs");
+const grid = document.querySelector("#businessGrid");
+const count = document.querySelector("#resultCount");
+const emptyState = document.querySelector("#emptyState");
+const searchInput = document.querySelector("#searchInput");
+const clearSearch = document.querySelector("#clearSearch");
+const form = document.querySelector("#businessForm");
+const categorySelect = document.querySelector("#category");
+const formMessage = document.querySelector("#formMessage");
+function loadBusinesses() {
+  const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+  return [...sheetBusinesses, ...starterBusinesses, ...saved];
+}
+
+function saveBusiness(business) {
+  const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+  saved.unshift(business);
+  localStorage.setItem(storageKey, JSON.stringify(saved));
+}
+
+function normalize(value) {
+  return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+}
+
+function renderCategories() {
+  tabs.innerHTML = "";
+  categories.forEach((category) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = category;
+    button.className = category === selectedCategory ? "active" : "";
+    button.addEventListener("click", () => {
+      selectedCategory = category;
+      renderCategories();
+      renderBusinesses();
+    });
+    tabs.appendChild(button);
+  });
+
+  categorySelect.innerHTML = "";
+  categories
+    .filter((category) => category !== "Todas")
+    .forEach((category) => {
+      const option = document.createElement("option");
+      option.value = category;
+      option.textContent = category;
+      categorySelect.appendChild(option);
+    });
+}
+
+function businessMatchesSearch(business, query) {
+  const text = `${business.name} ${business.category} ${business.address} ${business.phone} ${business.website}`;
+  return normalize(text).includes(query);
+}
+
+function sameCategory(a, b) {
   return normalize(a) === normalize(b);
 }
 
@@ -98,82 +196,3 @@ function csvToBusinesses(csv) {
     })
     .filter((business) => {
       const isApproved = business.approved === "si" || business.approved === "aprobado";
-      return isApproved && business.name && business.category && business.address && business.phone;
-    });
-}
-
-function parseCsv(csv) {
-  const rows = [];
-  let row = [];
-  let value = "";
-  let insideQuotes = false;
-
-  for (let index = 0; index < csv.length; index += 1) {
-    const char = csv[index];
-    const next = csv[index + 1];
-
-    if (char === '"' && insideQuotes && next === '"') {
-      value += '"';
-      index += 1;
-    } else if (char === '"') {
-      insideQuotes = !insideQuotes;
-    } else if (char === "," && !insideQuotes) {
-      row.push(value);
-      value = "";
-    } else if ((char === "\n" || char === "\r") && !insideQuotes) {
-      if (value || row.length) {
-        row.push(value);
-        rows.push(row);
-        row = [];
-        value = "";
-      }
-      if (char === "\r" && next === "\n") index += 1;
-    } else {
-      value += char;
-    }
-  }
-
-  if (value || row.length) {
-    row.push(value);
-    rows.push(row);
-  }
-
-  return rows;
-}
-
-function strongText(text) {
-  const strong = document.createElement("strong");
-  strong.textContent = text;
-  return strong;
-}
-
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const data = new FormData(form);
-  const business = {
-    name: data.get("name").trim(),
-    category: data.get("category"),
-    address: data.get("address").trim(),
-    phone: data.get("phone").trim(),
-    website: data.get("website").trim(),
-  };
-
-  saveBusiness(business);
-  selectedCategory = business.category;
-  form.reset();
-  formMessage.textContent = "Negocio registrado en esta computadora. Para que salga en todos lados, agregalo a Google Sheets y pon aprobado = si.";
-  renderCategories();
-  renderBusinesses();
-  document.querySelector("#directorio").scrollIntoView({ behavior: "smooth" });
-});
-
-searchInput.addEventListener("input", renderBusinesses);
-clearSearch.addEventListener("click", () => {
-  searchInput.value = "";
-  renderBusinesses();
-  searchInput.focus();
-});
-
-renderCategories();
-renderBusinesses();
-loadSheetBusinesses();
