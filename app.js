@@ -1,3 +1,7 @@
+const supabaseUrl = "https://byqklrrjnvafflrrkuac.supabase.co";
+const supabaseKey = "sb_publishable_jXP_byfYeAAa1kLBHwURWg_S__9PLob";
+const db = window.supabase.createClient(supabaseUrl, supabaseKey);
+
 const categories = [
   "Todas",
   "Panaderia",
@@ -12,6 +16,7 @@ const categories = [
   "Restaurantes",
   "Tecnologia",
 ];
+
 const starterBusinesses = [
   {
     name: "Panaderia El Trigal",
@@ -36,10 +41,8 @@ const starterBusinesses = [
   },
 ];
 
-const googleSheetCsvUrl = "https://docs.google.com/spreadsheets/d/1YJTh8yEMYVsVLzgMyOmR8NMpvYO136b2JotNy_2dlrQ/gviz/tq?tqx=out:csv";
-const storageKey = "guia-lara-businesses";
 let selectedCategory = "Todas";
-let sheetBusinesses = [];
+let businessesFromDatabase = [];
 
 const tabs = document.querySelector("#categoryTabs");
 const grid = document.querySelector("#businessGrid");
@@ -50,19 +53,56 @@ const clearSearch = document.querySelector("#clearSearch");
 const form = document.querySelector("#businessForm");
 const categorySelect = document.querySelector("#category");
 const formMessage = document.querySelector("#formMessage");
-function loadBusinesses() {
-  const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
-  return [...sheetBusinesses, ...starterBusinesses, ...saved];
-}
-
-function saveBusiness(business) {
-  const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
-  saved.unshift(business);
-  localStorage.setItem(storageKey, JSON.stringify(saved));
-}
 
 function normalize(value) {
-  return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function loadBusinesses() {
+  return businessesFromDatabase.length ? businessesFromDatabase : starterBusinesses;
+}
+
+async function loadBusinessesFromSupabase() {
+  formMessage.textContent = "Cargando negocios...";
+
+  const { data, error } = await db
+    .from("businesses")
+    .select("id, name, category, address, phone, website, approved, created_at")
+    .eq("approved", true)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("No se pudo cargar Supabase", error);
+    formMessage.textContent = "No se pudo cargar Supabase. Revisa que la tabla businesses este expuesta en Data API.";
+    renderBusinesses();
+    return;
+  }
+
+  businessesFromDatabase = data || [];
+  formMessage.textContent = "";
+  renderBusinesses();
+}
+
+async function saveBusiness(business) {
+  const { error } = await db.from("businesses").insert([
+    {
+      name: business.name,
+      category: business.category,
+      address: business.address,
+      phone: business.phone,
+      website: business.website,
+      approved: false,
+    },
+  ]);
+
+  if (error) {
+    console.error("No se pudo registrar el negocio", error);
+    throw error;
+  }
 }
 
 function renderCategories() {
@@ -81,6 +121,11 @@ function renderCategories() {
   });
 
   categorySelect.innerHTML = "";
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Elige una categoria";
+  categorySelect.appendChild(placeholder);
+
   categories
     .filter((category) => category !== "Todas")
     .forEach((category) => {
@@ -151,48 +196,45 @@ function renderBusinesses() {
   emptyState.classList.toggle("show", businesses.length === 0);
 }
 
-async function loadSheetBusinesses() {
-  if (!googleSheetCsvUrl) return;
-
-  try {
-    const response = await fetch(googleSheetCsvUrl);
-    const csv = await response.text();
-    sheetBusinesses = csvToBusinesses(csv);
-    renderBusinesses();
-  } catch (error) {
-    console.error("No se pudo cargar Google Sheets", error);
-    if (formMessage) formMessage.textContent = "No se pudo cargar la hoja de negocios.";
-  }
+function strongText(text) {
+  const strong = document.createElement("strong");
+  strong.textContent = text;
+  return strong;
 }
 
-function csvToBusinesses(csv) {
-  const rows = parseCsv(csv);
-  const headerRowIndex = rows.findIndex((row) => {
-    const normalized = row.map((cell) => normalize(cell));
-    return normalized.includes("nombre") && normalized.includes("categoria");
-  });
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const data = new FormData(form);
+  const business = {
+    name: data.get("name").trim(),
+    category: data.get("category"),
+    address: data.get("address").trim(),
+    phone: data.get("phone").trim(),
+    website: data.get("website").trim(),
+  };
 
-  if (headerRowIndex === -1) return [];
+  formMessage.textContent = "Enviando negocio...";
 
-  const headers = rows[headerRowIndex].map((header) => normalize(header));
-  const businessRows = rows.slice(headerRowIndex + 1);
+  try {
+    await saveBusiness(business);
+    selectedCategory = business.category;
+    form.reset();
+    formMessage.textContent = "Negocio enviado. Aparecera cuando lo apruebes en Supabase.";
+    renderCategories();
+    renderBusinesses();
+    document.querySelector("#directorio").scrollIntoView({ behavior: "smooth" });
+  } catch (error) {
+    formMessage.textContent = "No se pudo enviar. Revisa Supabase y vuelve a intentar.";
+  }
+});
 
-  return businessRows
-    .map((row) => {
-      const data = {};
-      headers.forEach((header, index) => {
-        data[header] = (row[index] || "").trim();
-      });
+searchInput.addEventListener("input", renderBusinesses);
+clearSearch.addEventListener("click", () => {
+  searchInput.value = "";
+  renderBusinesses();
+  searchInput.focus();
+});
 
-      const approved = normalize(data.aprobado || "");
-      return {
-        name: data.nombre || "",
-        category: data.categoria || "",
-        address: data.direccion || "",
-        phone: data.telefono || "",
-        website: data["sitio web o red social"] || data.web || data.redes || "",
-        approved,
-      };
-    })
-    .filter((business) => {
-      const isApproved = business.approved === "si" || business.approved === "aprobado";
+renderCategories();
+renderBusinesses();
+loadBusinessesFromSupabase();
